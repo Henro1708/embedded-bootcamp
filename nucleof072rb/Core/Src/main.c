@@ -19,6 +19,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "spi.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -50,12 +52,57 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+extern SPI_HandleTypeDef hspi1;	 // For SPI communication
+extern TIM_HandleTypeDef htim1;  // Using TIM1 for PWM output
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#define TIMER_PERIOD 64000  // TIM1 counter period set on .ioc
+#define MIN_DUTY_CYCLE 0.05  // 5%
+#define MAX_DUTY_CYCLE 0.10  // 10%
 
+void set_CS_high(){
+	HAL_GPIO_WritePin(GPIOx, GPIO_PIN_y, GPIO_PIN_SET);
+}
+
+void set_CS_low(){
+	HAL_GPIO_WritePin(GPIOx, GPIO_PIN_y, GPIO_PIN_RESET);
+}
+
+uint16_t Read_ADC_Value() {
+    uint8_t txData[3] = {0xC0, 0x00, 0x00};  // Command: Start(1), Single(1), CH0(00), rest 0s
+    uint8_t rxData[3] = {0};  // for received data
+
+    set_CS_low();  // start communication
+    HAL_SPI_TransmitReceive(&hspi1, txData, rxData, 3, HAL_MAX_DELAY);
+    set_CS_high(); // end communication
+
+    // Convert received bytes into 10-bit ADC value
+    uint16_t adc_value = ((rxData[1] & 0x03) << 8) | rxData[2]; // Thank you MTE 241
+
+    return adc_value;
+}
+
+void Set_PWM_DutyCycle(uint16_t adc_value) {
+    // Ensure ADC value is within the 10-bit range up to 10%
+    if (adc_value > 1023) adc_value = 1023;
+
+    // Compute min and max counts
+    uint16_t min_counts = (uint16_t)(TIMER_PERIOD * MIN_DUTY_CYCLE);  // 5% of timer period = 3200
+    uint16_t max_counts = (uint16_t)(TIMER_PERIOD * MAX_DUTY_CYCLE);  // 10% of timer period = 6400
+
+    // Convert ADC value counts
+    uint16_t pwm_counts = (uint16_t)(((adc_value / 1023.0) * (max_counts - min_counts)) + min_counts);
+
+    // Set the compare register for TIM1, Channel 1
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pwm_counts);
+}
+
+void Start_PWM() {
+    // Start timer only once
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+}
 /* USER CODE END 0 */
 
 /**
@@ -87,8 +134,11 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_SPI1_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-
+  Start_PWM();
+  HAL_Delay(10);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -96,7 +146,9 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+	  uint16_t adc_value = Read_ADC_Value();  // Read ADC value from ADC
+	  Set_PWM_DutyCycle(adc_value);  // Update PWM output
+	  HAL_Delay(10);  // Small delay
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
