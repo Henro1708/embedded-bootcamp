@@ -85,14 +85,14 @@ uint16_t Read_ADC_Value() {
 }
 
 void Set_PWM_DutyCycle(uint16_t adc_value) {
-    // Ensure ADC value is within the 10-bit range up to 10%
+    // ADC value has to be in the 10-bit range up to 10%
     if (adc_value > 1023) adc_value = 1023;
 
-    // Compute min and max counts
+    // Get min and max counts
     uint16_t min_counts = (uint16_t)(TIMER_PERIOD * MIN_DUTY_CYCLE);  // 5% of timer period = 3200
     uint16_t max_counts = (uint16_t)(TIMER_PERIOD * MAX_DUTY_CYCLE);  // 10% of timer period = 6400
 
-    // Convert ADC value counts
+    // Convert ADC value to counts
     uint16_t pwm_counts = (uint16_t)(((adc_value / 1023.0) * (max_counts - min_counts)) + min_counts);
 
     // Set the compare register for TIM1, Channel 1
@@ -146,9 +146,9 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  uint16_t adc_value = Read_ADC_Value();  // Read ADC value from ADC
+	  uint16_t adc_value = Read_ADC_Value();  // Read ADC value
 	  Set_PWM_DutyCycle(adc_value);  // Update PWM output
-	  HAL_Delay(10);  // Small delay
+	  HAL_Delay(10);  // Delay
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
