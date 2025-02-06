@@ -71,8 +71,8 @@ void set_CS_low(){
 }
 
 uint16_t Read_ADC_Value() {
-    uint8_t txData[3] = {0xC0, 0x00, 0x00};  // Command: Start(1), Single(1), CH0(00), rest 0s
-    uint8_t rxData[3] = {0};  // for received data
+    uint8_t txData[3] = {0xC0, 0x00, 0x00};  // Command: Start(1), Single(1), CH0(00), and 0s
+    uint8_t rxData[3] = {0};  // for received data (10 bit)
 
     set_CS_low();  // start communication
     HAL_SPI_TransmitReceive(&hspi1, txData, rxData, 3, HAL_MAX_DELAY);
@@ -85,7 +85,7 @@ uint16_t Read_ADC_Value() {
 }
 
 void Set_PWM_DutyCycle(uint16_t adc_value) {
-    // ADC value has to be in the 10-bit range up to 10%
+    // ADC value has to be in the 10-bit range from 5% up to 10%
     if (adc_value > 1023) adc_value = 1023;
 
     // Get min and max counts
