@@ -63,15 +63,15 @@ extern TIM_HandleTypeDef htim1;  // Using TIM1 for PWM output
 #define MAX_DUTY_CYCLE 0.10  // 10%
 
 void set_CS_high(){
-	HAL_GPIO_WritePin(GPIOx, GPIO_PIN_y, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
 }
 
 void set_CS_low(){
-	HAL_GPIO_WritePin(GPIOx, GPIO_PIN_y, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOP, GPIO_PIN_8, GPIO_PIN_RESET);
 }
 
 uint16_t Read_ADC_Value() {
-    uint8_t txData[3] = {0xC0, 0x00, 0x00};  // Command: Start(1), Single(1), CH0(00), and 0s
+    uint8_t txData[3] = {0x01, 0x80, 0x00};  // Command: Start(1), Single(10), CH0(00), and 0s
     uint8_t rxData[3] = {0};  // for received data (10 bit)
 
     set_CS_low();  // start communication
@@ -99,10 +99,6 @@ void Set_PWM_DutyCycle(uint16_t adc_value) {
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pwm_counts);
 }
 
-void Start_PWM() {
-    // Start timer only once
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-}
 /* USER CODE END 0 */
 
 /**
@@ -137,7 +133,8 @@ int main(void)
   MX_SPI1_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-  Start_PWM();
+  set_CS_high(); // Makes sure communication begin correctly
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1, TIMER_PERIOD * MIN_DUTY_CYCLE);  // Starts PWM and motor starts at min value
   HAL_Delay(10);
   /* USER CODE END 2 */
 
@@ -145,10 +142,11 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
 	  uint16_t adc_value = Read_ADC_Value();  // Read ADC value
 	  Set_PWM_DutyCycle(adc_value);  // Update PWM output
+
 	  HAL_Delay(10);  // Delay
+    /* USER CODE END WHILE */
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
