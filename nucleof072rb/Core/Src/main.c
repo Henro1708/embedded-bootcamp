@@ -67,7 +67,7 @@ void set_CS_high(){
 }
 
 void set_CS_low(){
-	HAL_GPIO_WritePin(GPIOP, GPIO_PIN_8, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
 }
 
 uint16_t Read_ADC_Value() {
@@ -134,7 +134,10 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   set_CS_high(); // Makes sure communication begin correctly
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1, TIMER_PERIOD * MIN_DUTY_CYCLE);  // Starts PWM and motor starts at min value
+
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);  // Starts PWM
+  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, TIMER_PERIOD * MIN_DUTY_CYCLE);  // Set PWM to initial value
+
   HAL_Delay(10);
   /* USER CODE END 2 */
 
